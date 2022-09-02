@@ -1,15 +1,11 @@
 const ethers = require("ethers");
 const fs = require("fs-extra");
+require("dotenv").config();
 
 async function main() {
   //http://127.0.0.1:7545
-  const provider = new ethers.providers.JsonRpcProvider(
-    "http://127.0.0.1:7545"
-  );
-  const wallet = new ethers.Wallet(
-    "8f5d99c9c19b8ada2820a3cac9976ad10f5e576a2eb8a9b8d68ccca1f80c7607",
-    provider
-  );
+  const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const abi = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.abi", "utf8");
   const binary = fs.readFileSync(
     "./SimpleStorage_sol_SimpleStorage.bin",
@@ -18,7 +14,7 @@ async function main() {
   const contractFactory = new ethers.ContractFactory(abi, binary, wallet);
   console.log("Deploying...Please wait!");
   const contract = await contractFactory.deploy(); //STOP here! Wait for contract to deploy.
-  const transactionReceipt = await contract.deployTransaction.wait(1); // wait 1 block confirmation
+  await contract.deployTransaction.wait(1); // wait 1 block confirmation
 
   /*   console.log("Here is the deployment transaction: ");
   console.log(contract.deployTransaction);
@@ -26,7 +22,7 @@ async function main() {
   console.log("Here is the transaction receipt: ");
   console.log(transactionReceipt); */
 
-/*   console.log("Let's deploy with only transaction data: ");
+  /*   console.log("Let's deploy with only transaction data: ");
   const nonce = await wallet.getTransactionCount();
   const tx = {
     nonce: nonce,
@@ -39,8 +35,16 @@ async function main() {
   };
   const sentTxResponse = await wallet.sendTransaction(tx);
   await sentTxResponse.wait(1);
-  console.log(sentTxResponse);
-} */
+  console.log(sentTxResponse); */
+
+  //get number
+  const currentFavoriteNumber = await contract.retrieve();
+  console.log(`Current Favourite Number: ${currentFavoriteNumber.toString()}`);
+  const transactionResponse = await contract.store("7");
+  const transactionReceipt = await transactionResponse.wait(1);
+  const updatedFavouriteNumber = await contract.retrieve();
+  console.log(`Updated Favorite Number : ${updatedFavouriteNumber}`);
+}
 
 main()
   .then(() => process.exit(0))
